@@ -17,6 +17,16 @@ If these files don't exist, stop and tell the developer this project hasn't been
 
 If these files exist but appear inconsistent with the code you can see, flag the discrepancy before proceeding. Do not silently pick one over the other. Ask which is correct.
 
+## Fetching Capability Specs
+
+When adding a new capability (Mode 2) or when generation instructions are needed for an existing capability, fetch the capability spec from the Charter framework repository:
+
+```
+https://raw.githubusercontent.com/mtutty/charter/main/capabilities/{capability-name}.md
+```
+
+The spec is the authoritative generation instruction for that capability. Use it instead of generating from general knowledge. If the fetch fails, tell the developer and ask them to check network access to github.com.
+
 ## Operating Modes
 
 You operate in one of three modes depending on what's being requested. Identify the mode before acting.

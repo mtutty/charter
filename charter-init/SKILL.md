@@ -7,6 +7,25 @@ You are conducting a Charter project initialization. Your job is to interview th
 
 The charter is the primary source of truth for this project. Code is downstream of it. Every future LLM interaction with this codebase should read the charter first.
 
+## Mandatory First Step — Fetch Framework Reference Data
+
+Before starting the interview, fetch the following files from the Charter framework repository. You will need them to propose stacks, select libraries, and generate capability scaffolding.
+
+```
+https://raw.githubusercontent.com/mtutty/charter/main/stacks.md
+https://raw.githubusercontent.com/mtutty/charter/main/libraries.md
+```
+
+Then fetch the capability spec for each capability you end up selecting during the interview. Capability specs live at:
+
+```
+https://raw.githubusercontent.com/mtutty/charter/main/capabilities/{capability-name}.md
+```
+
+For example: `capabilities/auth.md`, `capabilities/billing.md`, `capabilities/mailer.md`.
+
+Do not proceed with stack proposal, library selection, or code generation without this data. If a fetch fails, tell the developer which URL failed and ask them to check their network connection or whether the Charter repository is accessible.
+
 ## Your Responsibilities
 
 1. Conduct a focused conversational interview
@@ -259,14 +278,33 @@ Seed this file with the significant decisions made during the interview — capa
 
 ## Generating the Initial Scaffold
 
-After producing the charter files, generate:
+After producing the charter files, generate the project scaffold using the framework reference data you fetched at the start of this session.
 
-1. The directory structure for all selected capabilities
-2. Stub `.ext` files for each capability with typed interfaces
-3. A `.env.example` containing all configuration values for all selected capabilities, grouped by capability, with comments
-4. A `README.md` that points developers to the charter as the primary source of truth
+### Step 1 — Select and run the base stack scaffold
 
-Do not generate implementation code during init. The charter and scaffold are the init deliverables. Implementation generation is a separate step invoked explicitly.
+Using `stacks.md`, identify the best-fit base stack for this project's declared `stack` configuration. Check its `capabilities-covered` and `capabilities-partial` lists to understand what it provides out of the box.
+
+Run the stack's scaffold command (e.g., `npx create-t3-app@latest`, `npx create-next-app@latest`, `django-admin startproject`, etc.) to generate the base project. Do not write the base project files from scratch — use the scaffold tool.
+
+If no stack in `stacks.md` is a good fit, use the closest match and note the gap.
+
+### Step 2 — Install capability libraries
+
+For each selected capability, consult `libraries.md`. Match the capability and the project's stack family to find the recommended library. Install it. Do not generate library code from scratch when a library is available.
+
+If a capability has no library entry (listed under "Capabilities without standard libraries"), it will be generated from spec in the next step.
+
+### Step 3 — Generate capability code from specs
+
+For each selected capability, use the capability spec you fetched (e.g., `capabilities/auth.md`) as the generation instructions. The spec tells you exactly what to generate, what the library covers, and what Charter needs to add on top.
+
+Generate only what the spec says to generate. Do not add implementation beyond what the spec describes.
+
+### Step 4 — Generate supporting files
+
+1. Stub `.ext` files for each capability with typed interfaces
+2. A `.env.example` containing all configuration values for all selected capabilities, grouped by capability, with comments
+3. A `README.md` that points developers to the charter as the primary source of truth
 
 ## Closing the Init Session
 

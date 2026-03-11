@@ -8,7 +8,223 @@ Reference document for charter-init. Lists known base stacks, what Charter capab
 3. Cross-reference selected capabilities against `capabilities-covered` and `capabilities-partial` to identify what Charter needs to add
 4. For gaps, consult `libraries.md` for recommended library per capability
 
-*Last updated: 2026-03-10*
+*Last updated: 2026-03-11*
+
+---
+
+## create-next-app
+
+```yaml
+name: create-next-app
+url: https://nextjs.org/docs/app/getting-started/installation
+last-verified: 2026-03-11
+fetch-for-current-state: https://nextjs.org/docs/app/api-reference/cli/create-next-app
+
+runtime: node
+framework: next.js
+language: typescript
+database: none (developer's choice; Prisma or Drizzle added separately)
+architecture: monolithic  # single process serves both frontend and API routes
+
+scaffold:
+  command: npx create-next-app@latest {name} --yes --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --no-git
+  non-interactive: true  # --yes accepts all defaults
+
+capabilities-covered: []
+
+capabilities-partial:
+  - capability: api-access
+    what-is-included: App Router Route Handlers (REST endpoints) and Server Actions provide a full backend API surface from the same process
+    what-is-missing: Auth, API key management, rate limiting, versioning, public API docs — all must be added
+
+  - capability: secrets
+    what-is-included: Next.js environment variable conventions (.env.local, NEXT_PUBLIC_ prefix for client exposure)
+    what-is-missing: Typed validation module, startup fast-fail on missing vars, aggregated .env.example
+
+notes: >
+  Bare create-next-app is a framework skeleton, not an application starter. It provides no Charter
+  capabilities — no auth, no database, no email, no observability. Its value is the largest Node.js
+  ecosystem, Vercel-native deployment, and the flexibility to choose every infrastructure layer.
+  Charter must generate every capability from scratch. The monolithic architecture means a single
+  docker-compose app service handles both the React frontend and the Next.js API routes. Use this
+  stack when maximum flexibility is needed or when deploying to Vercel with full platform integration.
+  138K GitHub stars, 242K weekly downloads, actively maintained by Vercel.
+```
+
+---
+
+## create-t3-app
+
+```yaml
+name: create-t3-app
+url: https://create.t3.gg
+last-verified: 2026-03-11
+fetch-for-current-state: https://raw.githubusercontent.com/t3-oss/create-t3-app/main/README.md
+
+runtime: node
+framework: next.js + trpc
+language: typescript
+database: postgresql (Prisma) or sqlite/postgresql (Drizzle) — selected at init
+architecture: monolithic  # Next.js serves both frontend and tRPC API
+
+scaffold:
+  command: npm create t3-app@latest {name} -- --CI --trpc --prisma --nextAuth --tailwind --dbProvider postgres --noGit
+  non-interactive: true  # --CI flag enables programmatic mode; individual packages selected via flags
+  flags:
+    - --trpc          # include tRPC end-to-end type-safe API layer
+    - --prisma        # include Prisma ORM (alternative: --drizzle)
+    - --nextAuth      # include NextAuth.js (omit if using different auth)
+    - --tailwind      # include Tailwind CSS
+    - --dbProvider    # postgres | mysql | sqlite | planetscale
+
+capabilities-covered:
+  - migrations      # Prisma schema pre-generated with NextAuth models; prisma migrate dev ready to run
+
+capabilities-partial:
+  - capability: auth
+    what-is-included: NextAuth.js configured with session provider and database adapter wired to Prisma; basic session management
+    what-is-missing: Registration UI, social provider callback pages, MFA, password reset flow, email verification — Charter generates these
+
+  - capability: api-access
+    what-is-included: tRPC router scaffold with end-to-end TypeScript types; procedure definitions; React Query integration on client
+    what-is-missing: Public REST API, API key management, rate limiting, versioning, developer-facing docs
+
+  - capability: secrets
+    what-is-included: T3 Env package for typed environment variable validation with startup fast-fail
+    what-is-missing: Charter's aggregated .env.example across all capabilities; validation wiring for Charter-added capabilities
+
+notes: >
+  create-t3-app is the most Charter-compatible Node.js monolithic starter. The --CI flag enables
+  fully non-interactive scaffolding. It is the only Node.js starter that ships with a database
+  schema, ORM, and typed API layer pre-wired — meaning Charter's migration, auth, and API access
+  capabilities start from a real foundation rather than from nothing. The trade-off is strong
+  opinions: Next.js, tRPC, and Prisma are not configurable at Charter-init time within this stack.
+  Teams that need a different ORM or API style should use create-next-app instead. The monolithic
+  architecture means a single docker-compose app service. 28K GitHub stars, actively maintained
+  by the t3-oss organization.
+```
+
+---
+
+## NestJS
+
+```yaml
+name: NestJS
+url: https://nestjs.com
+last-verified: 2026-03-11
+fetch-for-current-state: https://docs.nestjs.com
+
+runtime: node
+framework: nestjs
+language: typescript
+database: none (developer's choice; TypeORM, Prisma, or Drizzle added separately)
+architecture: separated  # API-only backend; pairs with a frontend service (typically create-vite)
+frontend-pair: create-vite (react-ts template) — `npm create vite@latest web -- --template react-ts --no-interactive`
+
+scaffold:
+  command: npx @nestjs/cli new {name} --package-manager pnpm --skip-git --strict
+  non-interactive: false  # one prompt for package manager; use --package-manager to reduce interaction
+  note: nest new is fast; the package manager prompt is the only interactive step
+
+capabilities-covered: []
+
+capabilities-partial:
+  - capability: api-access
+    what-is-included: Modular controller/service/module architecture; decorator-based routing; dependency injection; CLI generators for adding controllers, services, and modules
+    what-is-missing: Database integration, auth, API key management, rate limiting, versioning, OpenAPI docs (available via @nestjs/swagger but not scaffolded)
+
+notes: >
+  NestJS is an opinionated, Angular-inspired backend framework with strong TypeScript support,
+  decorator-based architecture, and excellent documentation. It is the most structured of the
+  Node.js backend options — appropriate for enterprise teams or anyone who wants explicit
+  module boundaries enforced by the framework. Zero database, zero auth, zero Docker are
+  included in the scaffold — Charter generates everything. The separated architecture means
+  docker-compose has an api service (NestJS) and a web service (Vite/React). Hot reload uses
+  nest start --watch inside the api container. 74K GitHub stars, Series A funded with support
+  commitment through 2030, 7.7M weekly downloads.
+```
+
+---
+
+## Hono
+
+```yaml
+name: Hono
+url: https://hono.dev
+last-verified: 2026-03-11
+fetch-for-current-state: https://hono.dev/docs/getting-started/nodejs
+
+runtime: node  # also runs on Cloudflare Workers, Bun, Deno — Charter targets node unless specified
+framework: hono
+language: typescript
+database: none (developer's choice; Drizzle or Prisma are common pairings)
+architecture: separated  # API-only backend; pairs with a frontend service (typically create-vite)
+frontend-pair: create-vite (react-ts template) — `npm create vite@latest web -- --template react-ts --no-interactive`
+
+scaffold:
+  command: npm create hono@latest {name} -- --template nodejs --install --pm pnpm
+  non-interactive: true  # --template suppresses runtime selection; --pm suppresses package manager selection
+
+capabilities-covered: []
+
+capabilities-partial:
+  - capability: api-access
+    what-is-included: Minimal but complete routing layer; typed RPC via hono/rpc (end-to-end type safety without tRPC); built-in middleware for CORS, logger, JWT; OpenAPI generation via @hono/zod-openapi
+    what-is-missing: Auth implementation, API key management, rate limiting, versioning
+
+  - capability: real-time-transport
+    what-is-included: WebSocket support via upgradeWebSocket helper
+    what-is-missing: Connection registry, rooms, presence, broadcast — Charter generates these
+
+notes: >
+  Hono is the fastest-growing Node.js backend framework (9.3M weekly downloads, +26%
+  month-over-month as of early 2026). Its scaffolded output is intentionally minimal — a
+  single entry point and package.json — which means there is nothing to undo or work around.
+  hono/rpc provides end-to-end TypeScript types between server and client without requiring
+  tRPC, making it a good match for teams that want type safety without the full T3 ecosystem.
+  The nodejs template targets @hono/node-server; if the deployment target is Cloudflare Workers
+  or another edge runtime, select that template instead and adjust the containerization
+  accordingly. Fully non-interactive scaffold. 28K GitHub stars.
+```
+
+---
+
+## Fastify
+
+```yaml
+name: Fastify
+url: https://fastify.dev
+last-verified: 2026-03-11
+fetch-for-current-state: https://fastify.dev/docs/latest/
+
+runtime: node
+framework: fastify
+language: typescript
+database: none (developer's choice; Prisma and Drizzle both have documented Fastify integrations)
+architecture: separated  # API-only backend; pairs with a frontend service (typically create-vite)
+frontend-pair: create-vite (react-ts template) — `npm create vite@latest web -- --template react-ts --no-interactive`
+
+scaffold:
+  command: npx fastify-cli generate {name} --lang=ts
+  non-interactive: false  # no CI flag; command is single-step with no interactive prompts in practice
+
+capabilities-covered: []
+
+capabilities-partial:
+  - capability: api-access
+    what-is-included: Route definitions with JSON schema validation; automatic OpenAPI schema generation via @fastify/swagger; Fastify plugin architecture for modular route registration
+    what-is-missing: Auth, API key management, rate limiting, versioning — all require Charter generation or plugin installation
+
+notes: >
+  Fastify is the highest-performance Node.js HTTP framework, optimized for throughput with
+  built-in JSON schema validation and serialization. Its plugin system enforces encapsulation
+  and is well-suited to teams building large APIs that need explicit boundary enforcement.
+  The scaffold generates a minimal TypeScript project with a plugin/route structure.
+  Unlike Hono, Fastify targets Node.js exclusively — there is no edge runtime story.
+  Appropriate for teams with performance-critical API requirements or existing Fastify
+  expertise. 35K GitHub stars, 5M weekly downloads, actively maintained. Hot reload in
+  development uses fastify start -w (via fastify-cli) or nodemon inside the api container.
+```
 
 ---
 
@@ -54,78 +270,6 @@ notes: >
   SaaS workloads but requires migration to PostgreSQL for applications needing advanced DB features or heavy
   write concurrency. Feature flags, billing, background jobs, and search are explicitly listed as planned but
   not yet included — Charter must generate all of these for any app that needs them.
-```
-
----
-
-## create-t3-app
-
-```yaml
-name: create-t3-app
-url: https://create.t3.gg
-last-verified: 2026-03-10
-fetch-for-current-state: https://raw.githubusercontent.com/t3-oss/create-t3-app/main/README.md
-
-runtime: node
-framework: next.js
-language: typescript
-database: postgresql (Prisma) or sqlite/postgresql (Drizzle)
-
-capabilities-covered:
-  - auth            # NextAuth.js; email/password + OAuth providers; session management
-  - migrations      # Prisma Migrate or Drizzle Kit depending on ORM selection at init
-
-capabilities-partial:
-  - capability: api-access
-    what-is-included: tRPC end-to-end typesafe RPC layer; REST endpoints possible via Next.js API routes
-    what-is-missing: Public API key management, rate limiting, versioning, developer-facing API docs
-
-  - capability: secrets
-    what-is-included: .env file convention with Next.js environment variable support; T3 Env package for typed validation
-    what-is-missing: Charter's aggregated .env.example across all capabilities; startup exit-on-missing validation wiring
-
-notes: >
-  create-t3-app is a modular scaffold — each technology (tRPC, NextAuth, Prisma/Drizzle, Tailwind) is opt-in
-  at generation time, not all included by default. It is an excellent foundation for TypeScript-first teams
-  building tightly-typed full-stack apps, but it is deliberately thin: there is no auth UI beyond basic
-  configuration, no email, no background jobs, no observability, and no CI/CD out of the box. Charter must
-  generate the majority of functional capabilities for any non-trivial application. Best for teams who want
-  type safety scaffolding and will add their own infrastructure choices.
-```
-
----
-
-## create-next-app (bare Next.js)
-
-```yaml
-name: create-next-app
-url: https://nextjs.org/docs/getting-started/installation
-last-verified: 2026-03-10
-fetch-for-current-state: https://nextjs.org/docs/app/getting-started/installation
-
-runtime: node
-framework: next.js
-language: typescript
-database: none (no database included)
-
-capabilities-covered: []
-
-capabilities-partial:
-  - capability: api-access
-    what-is-included: Next.js App Router Route Handlers and Server Actions provide a backend API surface
-    what-is-missing: Auth, API key management, rate limiting, versioning — all must be added
-
-  - capability: secrets
-    what-is-included: Next.js environment variable conventions (.env.local, .env); NEXT_PUBLIC_ prefix for client exposure
-    what-is-missing: Typed validation module, startup fast-fail on missing vars, aggregated .env.example
-
-notes: >
-  Bare create-next-app (with defaults: TypeScript, Tailwind, ESLint, App Router, Turbopack) is a framework
-  skeleton, not an application starter. It provides zero capabilities in the Charter sense — no auth, no
-  database, no email, no observability. Its value is maximum flexibility and the largest ecosystem in the
-  Node.js space. Charter must generate every capability from scratch. Use this stack when the application
-  requires a custom infrastructure combination not served by Epic Stack or T3, or when deploying to Vercel
-  and want full Next.js platform integration.
 ```
 
 ---

@@ -228,6 +228,51 @@ notes: >
 
 ---
 
+## express-generator
+
+```yaml
+name: express-generator
+url: https://expressjs.com/en/starter/generator.html
+last-verified: 2026-03-11
+fetch-for-current-state: https://expressjs.com/en/starter/generator.html
+
+runtime: node
+framework: express
+language: javascript  # TypeScript requires post-scaffold configuration (tsconfig.json, tsx/ts-node, @types packages)
+database: none (developer's choice)
+architecture: separated  # --no-view produces an API-only backend; pairs with a frontend service (typically create-vite)
+frontend-pair: create-vite (react-ts template) — `npm create vite@latest web -- --template react-ts --no-interactive`
+
+scaffold:
+  command: npx express-generator {name} --no-view
+  non-interactive: true  # all options passed as flags; no interactive prompts
+  note: >
+    Omit --no-view to scaffold a server-rendered app with a template engine (--view=pug, --ejs, --hbs).
+    For TypeScript, Charter must add tsconfig.json, rename .js to .ts, and install @types/express, @types/node, and tsx or ts-node.
+
+capabilities-covered: []
+
+capabilities-partial:
+  - capability: api-access
+    what-is-included: Express Router with stub route files (GET / and GET /users); middleware pipeline via app.use(); express.json() and express.urlencoded() for body parsing
+    what-is-missing: Auth, API key management, rate limiting, versioning, OpenAPI docs — all require Charter generation or package installation
+
+notes: >
+  express-generator is the official Express.js scaffold tool. It produces the most minimal viable
+  Express application — a single app.js entry point, a bin/www server bootstrap, and two stub route
+  files. The output is plain JavaScript; Charter must add TypeScript configuration if the project
+  requires it (tsconfig.json, tsx for dev, tsc for build, @types packages). The --no-view flag
+  skips template engine scaffolding, producing a pure API backend appropriate for pairing with a
+  Vite/React frontend. Express is the most widely deployed Node.js HTTP framework (~30M weekly
+  downloads) and remains a common choice for teams with existing Express expertise or codebases.
+  Compared to Hono and Fastify, Express has no built-in TypeScript support, lower throughput
+  benchmarks, and a larger ecosystem of established community middleware — the trade-off is
+  familiarity and broad institutional knowledge. Appropriate when the team specifically wants
+  Express rather than a newer framework.
+```
+
+---
+
 ## Epic Stack
 
 ```yaml
